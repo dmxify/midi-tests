@@ -16,6 +16,23 @@
     font-family: "Roboto", arial, sans-serif;
   }
 
+  h2 {
+    font-size: 18px;
+  }
+
+  h3,
+  h4 {
+    font-size: 14px;
+  }
+
+  ul {
+    font-size: 14px;
+  }
+
+  a {
+    display: inline-block;
+  }
+
   #divStatusMessages {
     color: #00417a;
   }
@@ -24,23 +41,24 @@
     display: inline-block;
     background-color: #00417a;
     color: #c1ff00;
-    padding: 15px;
+    font-size: 12px;
+    padding: 10px;
     height: auto;
     min-height: 50px;
-    border: 4px outset #009fff;
+    border: 3px outset #009fff;
     border-radius: 10px;
     margin: 2px;
-    width: 40%;
+    width: 38%;
   }
 
   div.devices span {
     display: inline-block;
     width: 100%;
     text-align: center;
-    font-size: 18px;
+    font-size: 12px;
     font-style: italic;
     opacity: 0.5;
-    padding-bottom: 10px;
+    padding-bottom: 7px;
   }
 
   div.device {
@@ -56,15 +74,167 @@
     border-radius: 10px;
     min-width: 100px;
   }
+
+  a.button4 {
+    display: inline-block;
+    padding: 0.3em 1.2em;
+    margin: 0 0.1em 0.1em 0;
+    border: 0.16em solid rgba(255, 255, 255, 0);
+    border-radius: 2em;
+    box-sizing: border-box;
+    text-decoration: none;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+    color: #ffffff;
+    text-shadow: 0 0.04em 0.04em rgba(0, 0, 0, 0.35);
+    text-align: center;
+    transition: all 0.2s;
+    background-color: #4e9af1;
+  }
+
+  a.button4:hover {
+    border-color: #568786;
+    background-color: #68a3e7;
+  }
+
+  @media all and (max-width:30em) {
+    a.button4 {
+      display: block;
+      margin: 0.2em auto;
+    }
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    text-align: left;
+    border: 2px solid #00417a;
+    background-color: #4e9af1;
+  }
+
+  th {
+    border-top: 1px solid #00417a;
+    border-bottom: 2px solid #00417a;
+    border-left: 1px solid #00417a;
+    border-right: 1px solid #00417a;
+    padding: 5px 5px;
+    color: #00417a;
+  }
+
+  td {
+    border-bottom: 1px solid #00417a;
+    border-left: 1px solid #00417a;
+    border-right: 1px solid #00417a;
+    padding: 2px 5px;
+    color: #033560;
+  }
+
+  .midi-device {
+    position: relative;
+    top: 20px;
+    padding: 5px;
+    margin-bottom: 10px;
+    border: 4px outset #009fff;
+    border-radius: 10px;
+    background-color: #00417a;
+    color: #c1ff00;
+  }
+
+  .midi-device i {
+    color: #c1ff0080;
+    padding-left: 5px;
+    padding-right: 15px;
+  }
+
+  .indicators {
+    position: relative;
+    padding: 5px;
+    border: 4px outset #009fff;
+    border-radius: 10px;
+    background-color: #00417a;
+    width: fit-content;
+  }
+
+  .indicator {
+    display: inline-block;
+    padding: 5px;
+  }
+
+  .indicator .light {
+    position: relative;
+    bottom: 4px;
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background-color: #777;
+  }
+
+  .indicator .label {
+    display: inline-block;
+    position: relative;
+    padding-right: 3px;
+    color: #777;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .indicator .label .small {
+    font-size: 10px;
+    font-family: monospace;
+  }
+
+  .indicator .label .seperator {
+    position: relative;
+    border-bottom: 1px solid #777;
+  }
+
+
+  .indicator.on.green .light {
+    background-color: #30ff30;
+    box-shadow: 0 0 16px 10px #30ff30d0;
+    color: #30ff30;
+  }
+
+  .indicator.on.green .label {
+    color: #30ff30;
+    text-shadow: 0 0 5px #FFF, 0 0 10px #FFF, 0 0 20px #30ff30, 0 0 30px #30ff30;
+    border-color: #30ff30;
+  }
+
+
+  .indicator.on.orange .light {
+    background-color: #ffa500;
+    box-shadow: 0 0 16px 10px #ffa500d0;
+    color: #ffa500;
+  }
+
+  .indicator.on.orange .label {
+    color: #ffa500;
+    text-shadow: 0 0 5px #FFF, 0 0 10px #FFF, 0 0 20px #ffa500, 0 0 30px #ffa500;
+    border-color: #ffa500;
+  }
+
+  .indicator.on.red .light {
+    background-color: #ff0000;
+    box-shadow: 0 0 16px 10px #ff0000d0;
+    color: #ff0000;
+  }
+
+  .indicator.on.red .label {
+    color: #ff0000;
+    text-shadow: 0 0 5px #ffffff70, 0 0 10px #ffffff70, 0 0 20px #ff0000, 0 0 30px #ff0000;
+    border-color: #ff0000;
+  }
 </style>
 
 <body style="user-select:none; -webkit-app-region:drag; ">
 
-  <h2>Welcome to dmxify/electron-midi</h2>
-  <h4>
+  <h2>Welcome to dmxify/electron-midi
     <a href="https://www.npmjs.com/package/electron-midi" style="padding:0 30px;">npm package</a>
     <a href="https://github.com/dmxify/electron-midi">github repo</a>
-  </h4>
+  </h2>
+
   <h4>This zero-dependancy package uses the Web MIDI API which is available to Electron's renderer processes.</h4>
   <h3>Try the following:</h3>
   <ul>
@@ -80,23 +250,48 @@
       <b>"Learn" input by pressing the button below</b><br />
       <em>Uses electronMidi.learn().then(response) - an ES6 promise method</em>
     </li>
+    <li>
+      <b>"Train" a midi device</b><br />
+      <em>Uses the midi-device-trainer module</em>
+    </li>
   </ul>
   <div>
+    <div class="indicators">
+      <div class="indicator green" id="comIndicator_MidiInput">
+        <div class="label">
+          <div class="small">MIDI</div>
+          <div class="seperator"></div>
+          <div>IN</div>
+        </div>
+        <div class="light"></div>
+      </div>
+      <div class="indicator orange" id="comIndicator_MidiOutput">
+        <div class="label">
+          <div class="small">MIDI</div>
+          <div class="seperator"></div>
+          <div>OUT</div>
+        </div>
+        <div class="light"></div>
+      </div>
+    </div>
+    <div id="divStatusMessages"></div>
+    <div class="devices">
+      <span>MIDI Input Devices</span>
+      <div id="divInputDevices"></div>
+    </div>
+    <div class="devices" style="position:absolute;">
+      <span>MIDI Output Devices</span>
+      <div id="divOutputDevices"></div>
+    </div>
+    <br />
+    <a class="button4" id="btnLearn">Learn from Input</a>
+    <div id="divLearnInput">&#11164; Click this to learn </div>
+    <br />
+    <a class="button4" id="btnTrain">Train MIDI Device</a>
+    <br />
+    <div id="divDevices">
 
-  <div id="divStatusMessages"></div>
-  <div class="devices">
-    <span>MIDI Input Devices</span>
-    <div id="divInputDevices"></div>
-  </div>
-  <div class="devices" style="position:absolute;">
-    <span>MIDI Output Devices</span>
-    <div id="divOutputDevices"></div>
-  </div>
-  <br />
-  <button id="btnLearn">Learn from Input</button>
-  <div id="divLearnInput">&#11164; Click this to learn </div>
-  <script src="renderer.js">
-  </script>
+      <script src="renderer.js"></script>
 </body>
 
 </html>
