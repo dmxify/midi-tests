@@ -15,12 +15,14 @@ const electronMidi = new ElectronMidi();
 const MidiDeviceManager = require('../../midi-device-manager/index.js');
 const midiDeviceManager = new MidiDeviceManager;
 
-electronMidi.onReady = () => {
-  midiDeviceManager.loadAll(electronMidi.midiAccess);
+electronMidi.onReady = async () => {
+  await midiDeviceManager.loadAll(electronMidi.midiAccess);
+  renderMidiDevices();
 };
 
-electronMidi.onHardwareChange = () => {
-  midiDeviceManager.loadAll(electronMidi.midiAccess);
+electronMidi.onHardwareChange = async () => {
+  await midiDeviceManager.loadAll(electronMidi.midiAccess);
+  renderMidiDevices();
 };
 
 electronMidi.onInputMessage = (e) => {
@@ -29,6 +31,7 @@ electronMidi.onInputMessage = (e) => {
   showInputMessage(e);
   // midi gui
   flashElement('comIndicator_MidiInput');
+  flashMidiDeviceControl(e);
 }
 
 electronMidi.onOutputMessage = (e) => {
@@ -39,17 +42,41 @@ electronMidi.onOutputMessage = (e) => {
 
 midiDeviceManager.onTrained = (midiDevice, midiDeviceControl) => {
   if (midiDeviceControl) {
-
     console.log('Renderer: a new MidiDeviceControl has been bound to MidiDevice:');
     console.log(`${midiDevice.name} - ${midiDeviceControl.name}`);
+    midiDeviceManager.saveAll();
   } else {
     console.log('Renderer: midiDeviceControl already bound!');
   }
 
 }
 
+midiDeviceManager.onSaved = (e) => {
+  renderMidiDevices();
+}
+
 // midi gui
 let timeouts = {};
+
+function renderMidiDevices() {
+  let divInputDevices = document.getElementById("divInputDevices");
+  divInputDevices.innerHTML = ""; // clear old DOM
+  clearDevices();
+  for (let input of midiDeviceManager.midiDevices) {
+    var device = document.createElement("div");
+    device.dataset.id = input.id;
+    device.appendChild(document.createTextNode(input.name));
+    var cbUIEnabled = document.createElement('input');
+    cbUIEnabled.type = 'checkbox';
+    cbUIEnabled.checked = input.ui.enabled;
+    device.appendChild(cbUIEnabled);
+    device.classList.add('device');
+    divInputDevices.appendChild(device);
+    // for (let inputControl of input.midiDeviceControls) {
+    renderDevice(input.id, input.name, input.manufacturer, input.midiDeviceControls);
+    // }
+  }
+}
 
 
 function refreshDom() {
@@ -80,9 +107,17 @@ function refreshDom() {
 };
 
 function showInputMessage(e) {
-  document.getElementById("divStatusMessages").innerHTML = `${e.srcElement.name}: [${e.data[0]},${e.data[1]},${e.data[2]}]`;
+  document.getElementById("divStatusMessages").innerHTML = `${e.target.name}: [${e.data[0]},${e.data[1]},${e.data[2]}]`;
 }
 
+function flashMidiDeviceControl(e) {
+  const controls = document.querySelectorAll("[data-device-id]");
+  for (let control of controls.values()) {
+    if (control.textContent.indexOf(`${e.data[0]} ${e.data[1]} ${e.data[2]}`) !== -1 || control.textContent.indexOf(`${e.data[0]} ${e.data[1]} X`) !== -1) {
+      addTemporaryClass(control, "triggered", 250);
+    }
+  }
+}
 
 
 function getTime() {
@@ -108,7 +143,10 @@ document.getElementById("btnTrain").addEventListener("click", () => {
     document.getElementById("btnTrain").innerHTML = 'Train MIDI Device';
     midiDeviceManager.stopTraining();
   }
+});
 
+document.getElementById("btnSaveAll").addEventListener("click", () => {
+  midiDeviceManager.saveAll().then(toast("MIDI devices","Have been saved"));
 })
 
 function clearDevices() {
@@ -122,7 +160,6 @@ function renderDevice(id, name, manufacturer, controls) {
   let newDevice = document.createElement("div");
   newDevice.id = id;
   newDevice.classList.add("midi-device");
-
   // device info
   //newDevice.appendChild(document.createTextNode("Midi Device: "));
   let i = document.createElement("i");
@@ -141,23 +178,23 @@ function renderDevice(id, name, manufacturer, controls) {
   let th_id = document.createElement("th");
   let tr_name = document.createElement("th");
   let tr_type = document.createElement("th");
+  let tr_subType = document.createElement("th");
+  let tr_mode = document.createElement("th");
   let tr_bindings = document.createElement("th");
-  let tr_input = document.createElement("th");
-  let tr_output = document.createElement("th");
 
   th_id.appendChild(document.createTextNode('#'));
   tr_name.appendChild(document.createTextNode('Name'));
   tr_type.appendChild(document.createTextNode('Type'));
+  tr_subType.appendChild(document.createTextNode('Sub Type'));
+  tr_mode.appendChild(document.createTextNode('Mode'));
   tr_bindings.appendChild(document.createTextNode('Bindings'));
-  tr_input.appendChild(document.createTextNode('Input'));
-  tr_output.appendChild(document.createTextNode('Output'));
 
   tr.appendChild(th_id);
   tr.appendChild(tr_name);
   tr.appendChild(tr_type);
+  tr.appendChild(tr_subType);
+  tr.appendChild(tr_mode);
   tr.appendChild(tr_bindings);
-  tr.appendChild(tr_input);
-  tr.appendChild(tr_output);
 
   thead.appendChild(tr);
   table.appendChild(thead);
@@ -166,15 +203,13 @@ function renderDevice(id, name, manufacturer, controls) {
 
   document.getElementById("divDevices").appendChild(newDevice);
 
-  if (controls != null && typeof controls[Symbol.iterator] === 'function') {
-    for (control of controls) {
-      renderControl(newDevice.id, control.id, control.name, control.type, control.bindings, control.isInput, control.isOutput);
-    }
+  for (let control of controls) {
+    renderControl(newDevice.id, control._id, control._name, control._type, control._subType, control._mode, control._midiMessageBindings);
   }
 }
 
-function renderControl(deviceId, id, name, type, bindings, input, output) {
-  let html_midiDevice = document.getElementById("MidiDevice1");
+function renderControl(deviceId, id, name, type, subType, mode, midiMessageBindings) {
+  let html_midiDevice = document.getElementById(deviceId);
   let html_tbody = html_midiDevice.querySelector("tbody");
   // get existing item and delete it.
 
@@ -185,22 +220,35 @@ function renderControl(deviceId, id, name, type, bindings, input, output) {
   let td_id = document.createElement("td");
   let td_name = document.createElement("td");
   let td_type = document.createElement("td");
+  let td_subType = document.createElement("td");
+  let td_mode = document.createElement("td");
   let td_bindings = document.createElement("td");
-  let td_input = document.createElement("td");
-  let td_output = document.createElement("td");
   td_id.appendChild(document.createTextNode(id));
   td_name.appendChild(document.createTextNode(name));
   td_type.appendChild(document.createTextNode(type));
-  td_bindings.appendChild(document.createTextNode(bindings));
-  td_input.appendChild(document.createTextNode(input));
-  td_output.appendChild(document.createTextNode(output));
+  td_subType.appendChild(document.createTextNode(subType));
+  td_mode.appendChild(document.createTextNode(mode));
+  switch (type) {
+    case 'BUTTON':
+      for (let binding of midiMessageBindings) {
+        td_bindings.appendChild(document.createTextNode(`${binding[0]} ${binding[1]} ${binding[2]} | `));
+      }
+      break;
+    case 'FADER':
+      td_bindings.appendChild(document.createTextNode(`${midiMessageBindings[0][0]} ${midiMessageBindings[0][1]} X`));
+      break;
+    default:
+      break;
+  }
+
+
 
   newRow.appendChild(td_id);
   newRow.appendChild(td_name);
   newRow.appendChild(td_type);
+  newRow.appendChild(td_subType);
+  newRow.appendChild(td_mode);
   newRow.appendChild(td_bindings);
-  newRow.appendChild(td_input);
-  newRow.appendChild(td_output);
   html_tbody.appendChild(newRow);
 }
 //renderControl()
@@ -211,5 +259,71 @@ function flashElement(elementId, duration = 100) {
   document.getElementById(elementId).classList.add("on");
   timeouts[elementId] = setTimeout(() => {
     document.getElementById(elementId).classList.remove("on");
+  }, duration);
+}
+
+function addTemporaryClass(element, className, duration = 500) {
+  clearTimeout(timeouts[getHash(element.textContent)]);
+  element.classList.add(className);
+  timeouts[getHash(element.textContent)] = setTimeout(() => {
+    element.classList.remove(className);
+  }, duration);
+}
+
+function getHash(input) {
+  var hash = 0,
+    len = input.length;
+  for (var i = 0; i < len; i++) {
+    hash = ((hash << 5) - hash) + input.charCodeAt(i);
+    hash |= 0; // to 32bit integer
+  }
+  return hash;
+}
+
+
+async function toast(
+  title = "",
+  text = "",
+  style = {},
+  duration = 3500
+) {
+  var toast = document.createElement("div");
+  let styleDefaults = {
+    //"backgroundColor": "#303030e8",
+    "backgroundColor": "#e8e8e8e8",
+    "color": "#000000",
+    "width": "250px",
+    "height": "45px",
+    "boxShadow": "0 0 7px 10px #e8e8e8e8",
+    "position": "absolute",
+    "zIndex": "9",
+    "top": "-57px",
+    "left": "0",
+    "right": "0",
+    "marginLeft": "auto",
+    "marginRight": "auto",
+    "borderBottomLeftRadius": "15px",
+    "borderBottomRightRadius": "15px",
+    "transition": "top 0.4s"
+  };
+  let derivedStyle = Object.assign(styleDefaults, style);
+  Object.assign(toast.style, derivedStyle);
+  // add title
+  let t = document.createElement("span");
+  t.style.size = '14px';
+
+  t.appendChild(document.createTextNode(title));
+  toast.appendChild(t);
+  toast.appendChild(document.createTextNode(text));
+  // add text
+  // add to body
+  document.body.appendChild(toast);
+  // slide in
+  setTimeout(() => {
+    toast.style.top = "0px";
+  }, 0);
+  // slide out
+  setTimeout(() => {
+    toast.style.top = "-57px";
   }, duration);
 }

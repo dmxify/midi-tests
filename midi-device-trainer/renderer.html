@@ -33,6 +33,10 @@
     display: inline-block;
   }
 
+  em {
+    font-size: 12px;
+  }
+
   #divStatusMessages {
     color: #00417a;
   }
@@ -226,6 +230,32 @@
     text-shadow: 0 0 5px #ffffff70, 0 0 10px #ffffff70, 0 0 20px #ff0000, 0 0 30px #ff0000;
     border-color: #ff0000;
   }
+
+
+  .triggered td {
+    color: #30ff30;
+    text-shadow: 0 0 5px #fff, 0 0 10px #000, 0 0 20px #30ff30, 0 0 30px #30ff30;
+    background-color: black;
+  }
+
+  .stickynote:hover .hidden {
+    height: auto;
+    opacity: 1;
+  }
+
+  .stickynote .hidden {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: height 0.5s ease, opacity 0.5s ease;
+  }
+
+  .stickynote {
+    background-color: #edffb4;
+    border-radius: 15px;
+    padding: 10px;
+    margin: 10px;
+  }
 </style>
 
 <body style="user-select:none; -webkit-app-region:drag; ">
@@ -234,28 +264,36 @@
     <a href="https://www.npmjs.com/package/electron-midi" style="padding:0 30px;">npm package</a>
     <a href="https://github.com/dmxify/electron-midi">github repo</a>
   </h2>
+  <div class="stickynote" style="position: absolute; z-index:9;">
+    >>> Mouse over for guide <<< <div class="hidden">
+      <h4>This zero-dependancy package uses the Web MIDI API which is available to Electron's renderer processes.</h4>
 
-  <h4>This zero-dependancy package uses the Web MIDI API which is available to Electron's renderer processes.</h4>
-  <h3>Try the following:</h3>
-  <ul>
-    <li>
-      <b>Physically attach / detach a MIDI device from your computer.</b><br />
-      <em>The input and output device lists should update accordingly (provided the device drivers are installed)</em>
-    </li>
-    <li>
-      <b>Send midi messages to and from a midi-device</b><br />
-      <em>Have a look in devtools. <a href="https://github.com/dmxify/electron-midi#documentation">you can also set listeners</a></em>
-    </li>
-    <li>
-      <b>"Learn" input by pressing the button below</b><br />
-      <em>Uses electronMidi.learn().then(response) - an ES6 promise method</em>
-    </li>
-    <li>
-      <b>"Train" a midi device</b><br />
-      <em>Uses the midi-device-trainer module</em>
-    </li>
-  </ul>
-  <div>
+      <h3>Try the following:</h3>
+      <ul>
+        <li>
+          Physically <b>attach / detach</b> a MIDI device from your computer.<br />
+          <em>The input and output device lists should update accordingly (provided the device drivers are installed)</em>
+        </li>
+        <li>
+          <b>Send midi messages</b> to and from a midi-device<br />
+          <em>Have a look in devtools. <a href="https://github.com/dmxify/electron-midi#documentation">you can also set listeners</a></em>
+        </li>
+        <li>
+          <b>"Learn"</b> input with the <b>Learn from Input</b> button<br />
+          <em>Uses electronMidi.learn().then(response) - creates a promise that resolves on midi input</em>
+        </li>
+        <li>
+          <b>"Train"</b> a midi device<br />
+          <em>Uses the midi-device-trainer module</em>
+        </li>
+        <li>
+          <b>"Save"</b> all MIDI devices to file<br />
+          <em>Uses the midi-device-trainer module</em>
+        </li>
+      </ul>
+  </div>
+  </div>
+  <div style="position:absolute; top:125px;">
     <div class="indicators">
       <div class="indicator green" id="comIndicator_MidiInput">
         <div class="label">
@@ -288,6 +326,8 @@
     <div id="divLearnInput">&#11164; Click this to learn </div>
     <br />
     <a class="button4" id="btnTrain">Train MIDI Device</a>
+    <br />
+    <a class="button4" id="btnSaveAll">Save current state</a>
     <br />
     <div id="divDevices">
 
