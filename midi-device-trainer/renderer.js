@@ -17,12 +17,13 @@ const midiDeviceManager = new MidiDeviceManager;
 
 electronMidi.onReady = async () => {
   await midiDeviceManager.loadAll(electronMidi.midiAccess);
-  renderMidiDevices();
+  updateUI();
+  //wave()
 };
 
 electronMidi.onHardwareChange = async () => {
   await midiDeviceManager.loadAll(electronMidi.midiAccess);
-  renderMidiDevices();
+  onDeviceStateChange()
 };
 
 electronMidi.onInputMessage = (e) => {
@@ -52,13 +53,13 @@ midiDeviceManager.onTrained = (midiDevice, midiDeviceControl) => {
 }
 
 midiDeviceManager.onSaved = (e) => {
-  renderMidiDevices();
+  updateUI();
 }
 
 // midi gui
 let timeouts = {};
 
-function renderMidiDevices() {
+function updateUI() {
   let divInputDevices = document.getElementById("divInputDevices");
   divInputDevices.innerHTML = ""; // clear old DOM
   clearDevices();
@@ -68,53 +69,56 @@ function renderMidiDevices() {
     device.appendChild(document.createTextNode(input.name));
     var cbUIEnabled = document.createElement('input');
     cbUIEnabled.type = 'checkbox';
-    cbUIEnabled.checked = input.ui.enabled;
+    cbUIEnabled.checked = input.options.enabled;
+    cbUIEnabled.addEventListener('change', (e) => {
+      midiDeviceManager.getMidiDeviceById(e.target.parentElement.dataset.id).options.enabled = e.target.checked;
+      midiDeviceManager.saveAll().then(updateUI());
+    });
     device.appendChild(cbUIEnabled);
     device.classList.add('device');
     divInputDevices.appendChild(device);
-    // for (let inputControl of input.midiDeviceControls) {
-    renderDevice(input.id, input.name, input.manufacturer, input.midiDeviceControls);
-    // }
+    if (input.options.enabled) {
+      renderDevice(input.id, input.name, input.manufacturer, input.midiDeviceControls, input.options.imagePath);
+    }
   }
 }
 
 
-function refreshDom() {
-  let divInputDevices = document.getElementById("divInputDevices");
-  divInputDevices.innerHTML = ""; // clear old DOM
-  clearDevices();
-  for (let input of electronMidi.inputs.values()) {
-    var device = document.createElement("div");
-    device.innerHTML = input.name;
-    device.classList.add('device');
-    divInputDevices.appendChild(device);
+function onDeviceStateChange() {
+  // let divInputDevices = document.getElementById("divInputDevices");
+  // divInputDevices.innerHTML = ""; // clear old DOM
+  // clearDevices();
+  // for (let input of electronMidi.inputs.values()) {
+  //   var device = document.createElement("div");
+  //   device.innerHTML = input.name;
+  //   device.classList.add('device');
+  //   divInputDevices.appendChild(device);
+  //
+  //   renderDevice(input.id, input.name, input.manufacturer, MidiDeviceConfig.readConfig(input.name));
+  // }
+  //
+  // let divOutputDevices = document.getElementById("divOutputDevices");
+  // divOutputDevices.innerHTML = ""; // clear old DOM
+  // for (let output of electronMidi.outputs.values()) {
+  //   var device = document.createElement("div");
+  //   device.innerHTML = output.name;
+  //   device.classList.add('device');
+  //   divOutputDevices.appendChild(device);
+  // }
+  updateUI();
 
-    renderDevice(input.id, input.name, input.manufacturer, MidiDeviceConfig.readConfig(input.name));
-  }
-
-  let divOutputDevices = document.getElementById("divOutputDevices");
-  divOutputDevices.innerHTML = ""; // clear old DOM
-  for (let output of electronMidi.outputs.values()) {
-    var device = document.createElement("div");
-    device.innerHTML = output.name;
-    device.classList.add('device');
-    divOutputDevices.appendChild(device);
-  }
-
-
-  document.getElementById("divStatusMessages").innerHTML = `Device list updated [${getTime()}]`;
-
+  toast('Device list updated', getTime());
 };
 
 function showInputMessage(e) {
-  document.getElementById("divStatusMessages").innerHTML = `${e.target.name}: [${e.data[0]},${e.data[1]},${e.data[2]}]`;
+  document.getElementById("divStatusMessages").innerHTML = `${e.target.name}: [0x${e.data[0].toString(16)},0x${e.data[1].toString(16)},${e.data[2]}]`;
 }
 
 function flashMidiDeviceControl(e) {
   const controls = document.querySelectorAll("[data-device-id]");
   for (let control of controls.values()) {
     if (control.textContent.indexOf(`${e.data[0]} ${e.data[1]} ${e.data[2]}`) !== -1 || control.textContent.indexOf(`${e.data[0]} ${e.data[1]} X`) !== -1) {
-      addTemporaryClass(control, "triggered", 250);
+      addTemporaryClass(control, "triggered", 175);
     }
   }
 }
@@ -146,7 +150,7 @@ document.getElementById("btnTrain").addEventListener("click", () => {
 });
 
 document.getElementById("btnSaveAll").addEventListener("click", () => {
-  midiDeviceManager.saveAll().then(toast("MIDI devices","Have been saved"));
+  midiDeviceManager.saveAll().then(toast("MIDI devices", "Have been saved"));
 })
 
 function clearDevices() {
@@ -165,8 +169,9 @@ function renderDevice(id, name, manufacturer, controls) {
   let i = document.createElement("i");
   i.appendChild(document.createTextNode("MIDI bindings:"));
   let spanName = document.createElement("span");
+  // spanName.appendChild(document.createTextNode(`${manufacturer} ~ ${name} `));
   spanName.appendChild(i);
-  spanName.appendChild(document.createTextNode(`${manufacturer} ~ ${name} `));
+  spanName.innerHTML += `${manufacturer} ~ ${name} `;
   newDevice.appendChild(spanName);
 
   // table containing controls
@@ -181,6 +186,7 @@ function renderDevice(id, name, manufacturer, controls) {
   let tr_subType = document.createElement("th");
   let tr_mode = document.createElement("th");
   let tr_bindings = document.createElement("th");
+  let tr_edit = document.createElement("th");
 
   th_id.appendChild(document.createTextNode('#'));
   tr_name.appendChild(document.createTextNode('Name'));
@@ -188,6 +194,7 @@ function renderDevice(id, name, manufacturer, controls) {
   tr_subType.appendChild(document.createTextNode('Sub Type'));
   tr_mode.appendChild(document.createTextNode('Mode'));
   tr_bindings.appendChild(document.createTextNode('Bindings'));
+  tr_edit.appendChild(document.createTextNode(''));
 
   tr.appendChild(th_id);
   tr.appendChild(tr_name);
@@ -195,6 +202,7 @@ function renderDevice(id, name, manufacturer, controls) {
   tr.appendChild(tr_subType);
   tr.appendChild(tr_mode);
   tr.appendChild(tr_bindings);
+  tr.appendChild(tr_edit);
 
   thead.appendChild(tr);
   table.appendChild(thead);
@@ -215,6 +223,7 @@ function renderControl(deviceId, id, name, type, subType, mode, midiMessageBindi
 
   // add new item
   let newRow = document.createElement("tr");
+  newRow.id = deviceId + '_' + id;
   newRow.dataset.deviceId = deviceId;
 
   let td_id = document.createElement("td");
@@ -223,6 +232,7 @@ function renderControl(deviceId, id, name, type, subType, mode, midiMessageBindi
   let td_subType = document.createElement("td");
   let td_mode = document.createElement("td");
   let td_bindings = document.createElement("td");
+  let td_edit = document.createElement("td");
   td_id.appendChild(document.createTextNode(id));
   td_name.appendChild(document.createTextNode(name));
   td_type.appendChild(document.createTextNode(type));
@@ -240,8 +250,21 @@ function renderControl(deviceId, id, name, type, subType, mode, midiMessageBindi
     default:
       break;
   }
+  //<a class="button4" id="btnTrain">Train MIDI Device</a>
 
-
+  //deleteMidiDeviceControl
+  btnDelete = document.createElement('a');
+  btnDelete.dataset.deviceId = deviceId;
+  btnDelete.dataset.controlId = id;
+  btnDelete.classList.add("button-delete");
+  btnDelete.appendChild(document.createTextNode('x'));
+  btnDelete.addEventListener('click', (e) => {
+    midiDeviceManager.midiDevice_removeMidiDeviceControl(e.target.dataset.deviceId, e.target.dataset.controlId);
+    // .then(() => {
+    //   document.getElementById(newRow.id).remove();
+    // });
+  })
+  td_edit.appendChild(btnDelete);
 
   newRow.appendChild(td_id);
   newRow.appendChild(td_name);
@@ -249,6 +272,7 @@ function renderControl(deviceId, id, name, type, subType, mode, midiMessageBindi
   newRow.appendChild(td_subType);
   newRow.appendChild(td_mode);
   newRow.appendChild(td_bindings);
+  newRow.appendChild(td_edit);
   html_tbody.appendChild(newRow);
 }
 //renderControl()
@@ -262,7 +286,7 @@ function flashElement(elementId, duration = 100) {
   }, duration);
 }
 
-function addTemporaryClass(element, className, duration = 500) {
+function addTemporaryClass(element, className, duration = 250) {
   clearTimeout(timeouts[getHash(element.textContent)]);
   element.classList.add(className);
   timeouts[getHash(element.textContent)] = setTimeout(() => {
@@ -326,4 +350,37 @@ async function toast(
   setTimeout(() => {
     toast.style.top = "-57px";
   }, duration);
+}
+
+// variables needed:
+// desired resolution
+// physical coordinates of midi device controls
+//
+// for each coordinate, check if midi device control output is rgb light
+//
+// run pattern, and if one of the coordinates is in the bounds of a control, light it up.
+
+
+function wave(midiOutputPortName = 'APC40 mkII') {
+  var arrData = Array.from(Array(40), (x, idx) => [147, idx, idx]);
+  let ch = 147;
+  setInterval(() => {
+    arrData.forEach((val, idx) => {
+      arrData[idx][2] = (val[2] + 40) % 127;
+    });
+    console.log(arrData[0]);
+    electronMidi.sendAll(midiOutputPortName, arrData);
+  }, 500);
+}
+
+function flow(midiOutputPortName = 'APC40 mkII') {
+  var arrData = Array.from(Array(40), (x, idx) => [147, idx, (idx * 2)]);
+  let ch = 147;
+  setInterval(() => {
+    arrData.forEach((val, idx) => {
+      arrData[idx][2] = (val[2] + 41) % 127;
+    });
+    console.log(arrData[0]);
+    electronMidi.sendAll(midiOutputPortName, arrData);
+  }, 500);
 }
